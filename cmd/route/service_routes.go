@@ -1,8 +1,9 @@
 package route
 
 import (
-	"github.com/labstack/echo/v5"
 	"net/http"
+
+	"github.com/labstack/echo/v5"
 )
 
 func RegisterServiceRoutes(route *echo.Group) {
