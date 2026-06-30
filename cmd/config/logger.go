@@ -6,7 +6,6 @@ import (
 	"github.com/spf13/viper"
 	"os"
 	"strings"
-	"time"
 )
 
 func setLevel(level string) {
@@ -31,7 +30,7 @@ func setLevel(level string) {
 func LoggerConfig() {
 	logLevel := viper.GetString("LOG_LEVEL_API")
 	setLevel(logLevel)
-	zerolog.TimeFieldFormat = time.RFC3339Nano
+	zerolog.TimeFieldFormat = "2006-01-02 15:04:05.000"
 	log.Logger = zerolog.New(os.Stdout).With().Timestamp().Caller().Logger()
 }
 
