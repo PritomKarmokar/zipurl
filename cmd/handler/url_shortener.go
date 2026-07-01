@@ -3,14 +3,18 @@ package handler
 import (
 	"github.com/PritomKarmokar/zipurl/cmd/config"
 	"github.com/PritomKarmokar/zipurl/cmd/dts"
+	"github.com/PritomKarmokar/zipurl/cmd/model"
+	"github.com/PritomKarmokar/zipurl/cmd/repository"
 	"github.com/PritomKarmokar/zipurl/cmd/response"
+	"github.com/PritomKarmokar/zipurl/cmd/utils"
 	"github.com/labstack/echo/v5"
+	"github.com/spf13/viper"
+	"time"
 )
 
 func UrlShortenerHandler(c *echo.Context) error {
 	logger := config.GetRequestLogger(c)
 	db := config.GetDatabase()
-	_ = db
 
 	reqBody := dts.ShortUrlRequest{}
 	if err := c.Bind(&reqBody); err != nil {
@@ -23,7 +27,27 @@ func UrlShortenerHandler(c *echo.Context) error {
 		return response.DataValidationErr400.ReturnResponse(c, nil)
 	}
 
-	logger.Info().Msgf("Shortening URL %v", reqBody.Url)
+	id := utils.GenerateULID()
+	currentTime := time.Now()
+	uniqueToken := utils.EncodeString(id[20:]) // Generating Base62 encoded token from last 7 digits of ulid id
 
-	return response.GenericSuccess200.ReturnResponse(c, nil)
+	newUrl := &model.URL{
+		ID:          utils.GenerateULID(),
+		URL:         reqBody.Url,
+		HashedToken: uniqueToken,
+		CreatedAt:   currentTime,
+		UpdatedAt:   currentTime,
+	}
+	if err := repository.CreateUrlDBObject(db, newUrl); err != nil {
+		logger.Warn().Err(err).Msg("Failed to create url db object")
+	}
+
+	logger.Info().Msg("URL shortener DB object created successfully")
+
+	shortUrl := viper.GetString("ZIP_URL_BASE_URL") + "/" + newUrl.HashedToken
+
+	responseData := map[string]interface{}{
+		"short_url": shortUrl,
+	}
+	return response.GenericSuccess200.ReturnResponse(c, responseData)
 }
