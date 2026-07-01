@@ -7,7 +7,7 @@ import (
 	"github.com/labstack/echo/v5"
 )
 
-func CreateShortUrlHandler(c *echo.Context) error {
+func UrlShortenerHandler(c *echo.Context) error {
 	logger := config.GetRequestLogger(c)
 	db := config.GetDatabase()
 	_ = db
@@ -23,5 +23,7 @@ func CreateShortUrlHandler(c *echo.Context) error {
 		return response.DataValidationErr400.ReturnResponse(c, nil)
 	}
 
-	return nil
+	logger.Info().Msgf("Shortening URL %v", reqBody.Url)
+
+	return response.GenericSuccess200.ReturnResponse(c, nil)
 }

@@ -22,4 +22,6 @@ func RegisterRoutes(e *echo.Echo) {
 	healthGroup := basePrefix.Group("/health")
 	RegisterServiceRoutes(healthGroup)
 
+	internalRoute := basePrefix.Group("/api/v1")
+	RegisterInternalRoutes(internalRoute)
 }
