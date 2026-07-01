@@ -4,12 +4,12 @@ import "net/http"
 
 // InvalidCredentials indicates the username or password is incorrect.
 var (
-	InvalidCredentials = NewCodeObject(
-		http.StatusUnauthorized,
-		"ZIPURL_INV401",
+	InvalidUrlsProvided = NewCodeObject(
+		http.StatusBadRequest,
+		"ZIPURL_INVUP401",
 		map[string]string{
-			"en": "Invalid username or password",
-			"bn": "ভুল ইউজারনেম বা পাসওয়ার্ড",
+			"en": "Invalid short url provided",
+			"bn": "ভুল শর্ট ইউআরএল প্রদান করা হয়েছে",
 		},
 		nil,
 	)
@@ -23,7 +23,7 @@ var (
 		},
 		nil,
 	)
-	
+
 	DataValidationErr400 = NewCodeObject(
 		http.StatusBadRequest,
 		"ZIPURL_DVE400",

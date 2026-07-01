@@ -9,6 +9,7 @@ import (
 	"github.com/PritomKarmokar/zipurl/cmd/utils"
 	"github.com/labstack/echo/v5"
 	"github.com/spf13/viper"
+	"net/http"
 	"time"
 )
 
@@ -50,4 +51,20 @@ func UrlShortenerHandler(c *echo.Context) error {
 		"short_url": shortUrl,
 	}
 	return response.GenericSuccess200.ReturnResponse(c, responseData)
+}
+
+func UrlRedirectHandler(c *echo.Context) error {
+	logger := config.GetRequestLogger(c)
+	db := config.GetDatabase()
+
+	token := c.Param("token")
+	urlObject, err := repository.FetchUrlDBObject(db, token)
+
+	if err != nil || urlObject == nil {
+		logger.Error().Err(err).Msg("Failed to fetch url")
+		return response.InvalidUrlsProvided.ReturnResponse(c, nil)
+	}
+
+	originalUrl := urlObject.URL
+	return c.Redirect(http.StatusTemporaryRedirect, originalUrl)
 }
