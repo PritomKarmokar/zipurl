@@ -6,10 +6,13 @@ import (
 )
 
 func EchoConfig(e *echo.Echo) {
-	
+
 	e.Use(middleware.RequestID())
 	e.Use(middleware.BodyLimit(2_097_152)) // 2 MB
 
 	e.Use(middleware.RequestLogger())
 	e.Use(middleware.Recover())
+
+	// validator config
+	RegisterValidator(e)
 }

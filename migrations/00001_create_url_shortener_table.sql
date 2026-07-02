@@ -1,7 +1,7 @@
 -- +goose Up
 SELECT 'up SQL query';
 CREATE TABLE urls (
-   id BIGSERIAL PRIMARY KEY,
+   id CHAR(26) PRIMARY KEY,
    url TEXT NOT NULL,
    hashed_token TEXT NOT NULL,
    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

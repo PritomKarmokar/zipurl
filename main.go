@@ -12,6 +12,7 @@ func main() {
 	config.LoadEnv()
 	config.LoggerConfig()
 	config.EchoConfig(e)
+	config.ConnectDB()
 	route.RegisterRoutes(e)
 	config.StartServer(e)
 }
