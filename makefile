@@ -10,4 +10,4 @@ migrate-status:
 	@goose -dir migrations postgres "$(DB_DSN)" status
 
 migrate-create:
-	@goose -dir migrations create $(name) sql
+	@goose -dir migrations -s create $(name) sql
