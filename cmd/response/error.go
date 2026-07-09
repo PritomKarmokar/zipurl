@@ -51,5 +51,16 @@ var (
 			"en": "Failed to create short url",
 			"bn": "Failed to create short url",
 		},
-		nil)
+		nil,
+	)
+
+	UserAlreadyExistsWithEmail = NewCodeObject(
+		http.StatusBadRequest,
+		"ZIPURL_UEE",
+		map[string]string{
+			"en": "An user with this email address already exists.",
+			"bn": "এই ইমেইল দিয়ে ইতোমধ্যে একজন ইউজার নিবন্ধিত রয়েছেন।",
+		},
+		nil,
+	)
 )

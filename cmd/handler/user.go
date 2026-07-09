@@ -13,8 +13,8 @@ import (
 )
 
 func UserSignUpHandler(c *echo.Context) error {
-	logger := config.GetRequestLogger(c)
 	db := config.GetDatabase()
+	logger := config.GetRequestLogger(c)
 
 	reqBody := dts.UserSignUp{}
 	if err := c.Bind(&reqBody); err != nil {
@@ -27,19 +27,22 @@ func UserSignUpHandler(c *echo.Context) error {
 		return response.DataValidationErr400.ReturnResponse(c, nil)
 	}
 
-	id := utils.GenerateULID()
-	currentTime := time.Now()
+	user, err := repository.GetUserWithEmailAddress(db, reqBody.Email)
+	if user != nil || err != nil {
+		logger.Error().Err(err).Msg("User with this email address not found")
+		return response.UserAlreadyExistsWithEmail.ReturnResponse(c, nil)
+	}
 
 	newUser := &model.User{
-		ID:         id,
+		ID:         utils.GenerateULID(),
 		UserName:   reqBody.UserName,
 		FirstName:  reqBody.FirstName,
 		LastName:   reqBody.LastName,
 		Email:      reqBody.Email,
 		Role:       string(model.UserRole),
-		CreatedAt:  currentTime,
-		UpdatedAt:  currentTime,
-		DateJoined: currentTime,
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+		DateJoined: time.Now(),
 	}
 
 	if err := newUser.SetPassword(reqBody.Password); err != nil {
@@ -57,7 +60,7 @@ func UserSignUpHandler(c *echo.Context) error {
 		"first_name":  newUser.FirstName,
 		"last_name":   newUser.LastName,
 		"email":       newUser.Email,
-		"date_joined": newUser.DateJoined,
+		"date_joined": utils.FormatTime(newUser.DateJoined),
 	}
 	return response.UserSignUpSuccess.ReturnResponse(c, responseData)
 }

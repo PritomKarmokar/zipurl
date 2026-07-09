@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"errors"
 	"time"
 
 	"github.com/PritomKarmokar/zipurl/cmd/model"
@@ -27,4 +28,39 @@ func CreateNewUserObject(db *gorm.DB, user *model.User) error {
 		Msg("New User signup successful")
 
 	return nil
+}
+
+func GetUserWithEmailAddress(db *gorm.DB, email string) (*model.User, error) {
+	start := time.Now()
+	var user model.User
+
+	result := db.Where("email = ?", email).First(&user)
+	duration := time.Since(start)
+
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			log.Debug().
+				Str("operation", "GetUserWithEmailAddress").
+				Str("email", email).
+				Dur("duration_ms", duration).
+				Msg("User not found")
+			return nil, nil
+		}
+		log.Error().
+			Err(result.Error).
+			Str("email", email).
+			Str("operation", "GetUserWithEmailAddress").
+			Dur("duration", duration).
+			Msg("Failed to get user")
+		return nil, result.Error
+	}
+
+	log.Debug().
+		Str("operation", "GetUserWithEmailAddress").
+		Str("email", email).
+		Str("operation", "GetUserWithEmailAddress").
+		Dur("duration_ms", duration).
+		Msg("User with this email address found")
+	
+	return &user, nil
 }
