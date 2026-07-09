@@ -1,6 +1,9 @@
 package handler
 
 import (
+	"net/http"
+	"time"
+
 	"github.com/PritomKarmokar/zipurl/cmd/config"
 	"github.com/PritomKarmokar/zipurl/cmd/dts"
 	"github.com/PritomKarmokar/zipurl/cmd/model"
@@ -9,8 +12,6 @@ import (
 	"github.com/PritomKarmokar/zipurl/cmd/utils"
 	"github.com/labstack/echo/v5"
 	"github.com/spf13/viper"
-	"net/http"
-	"time"
 )
 
 func UrlShortenerHandler(c *echo.Context) error {
@@ -41,9 +42,10 @@ func UrlShortenerHandler(c *echo.Context) error {
 	}
 	if err := repository.CreateUrlDBObject(db, newUrl); err != nil {
 		logger.Warn().Err(err).Msg("Failed to create url db object")
+		return response.ShortURLCreationFailed.ReturnResponse(c, nil)
 	}
 
-	logger.Info().Msg("URL shortener DB object created successfully")
+	logger.Info().Msg("URL Shortener DB object created successfully")
 
 	shortUrl := viper.GetString("ZIP_URL_BASE_URL") + "/" + newUrl.HashedToken
 

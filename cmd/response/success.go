@@ -11,3 +11,13 @@ var GenericSuccess200 = NewCodeObject(
 	},
 	nil,
 )
+
+var UserSignUpSuccess = NewCodeObject(
+	http.StatusCreated,
+	"ZIP_URL_USUS",
+	map[string]string{
+		"en": "User Sign Up Successful",
+		"bn": "ইউজার সাইন আপ সফল হয়েছে",
+	},
+	nil,
+)

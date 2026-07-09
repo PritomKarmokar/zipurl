@@ -1,9 +1,11 @@
 package model
 
 import (
+	"time"
+
+	"github.com/PritomKarmokar/zipurl/cmd/utils"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
-	"time"
 )
 
 type Role string
@@ -59,4 +61,11 @@ func (u *User) UpdateLastLoginTime(db *gorm.DB) error {
 		Update("last_login", now)
 
 	return result.Error
+}
+
+func (u *User) BeforeCreate(db *gorm.DB) error {
+	if u.ID == "" {
+		u.ID = utils.GenerateULID()
+	}
+	return nil
 }

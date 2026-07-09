@@ -33,4 +33,23 @@ var (
 		},
 		nil,
 	)
+
+	UserSignUpFailed = NewCodeObject(
+		http.StatusBadRequest,
+		"ZIPURL_USUF",
+		map[string]string{
+			"en": "User Sign Up Failed",
+			"bn": "ইউজার সাইন আপ ব্যর্থ হয়েছে",
+		},
+		nil,
+	)
+
+	ShortURLCreationFailed = NewCodeObject(
+		http.StatusBadRequest,
+		"ZIPURL_SUCF",
+		map[string]string{
+			"en": "Failed to create short url",
+			"bn": "Failed to create short url",
+		},
+		nil)
 )
