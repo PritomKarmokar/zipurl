@@ -11,6 +11,7 @@ func main() {
 
 	config.LoadEnv()
 	config.LoggerConfig()
+	config.LoadClients()
 	config.EchoConfig(e)
 	config.ConnectDB()
 	route.RegisterRoutes(e)
