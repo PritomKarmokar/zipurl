@@ -30,7 +30,7 @@ func CreateNewUserObject(db *gorm.DB, user *model.User) error {
 	return nil
 }
 
-func GetUserWithEmailAddress(db *gorm.DB, email string) (*model.User, error) {
+func UserExistsByEmail(db *gorm.DB, email string) (bool, error) {
 	start := time.Now()
 	var user model.User
 
@@ -40,27 +40,25 @@ func GetUserWithEmailAddress(db *gorm.DB, email string) (*model.User, error) {
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			log.Debug().
-				Str("operation", "GetUserWithEmailAddress").
-				Str("email", email).
+				Str("operation", "FindUserWithEmailAddress").
 				Dur("duration_ms", duration).
-				Msg("User not found")
-			return nil, nil
+				Msg("User not found with this email")
+			return false, nil
 		}
 		log.Error().
 			Err(result.Error).
 			Str("email", email).
-			Str("operation", "GetUserWithEmailAddress").
-			Dur("duration", duration).
-			Msg("Failed to get user")
-		return nil, result.Error
+			Str("operation", "FindUserWithEmailAddress").
+			Dur("duration_ms", duration).
+			Msg("Unexpected error occurred")
+		return false, result.Error
 	}
 
 	log.Debug().
-		Str("operation", "GetUserWithEmailAddress").
+		Str("operation", "FindUserWithEmailAddress").
 		Str("email", email).
-		Str("operation", "GetUserWithEmailAddress").
 		Dur("duration_ms", duration).
 		Msg("User with this email address found")
-	
-	return &user, nil
+
+	return true, nil
 }

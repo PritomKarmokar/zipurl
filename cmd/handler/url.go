@@ -21,12 +21,12 @@ func UrlShortenerHandler(c *echo.Context) error {
 	reqBody := dts.ShortUrlRequest{}
 	if err := c.Bind(&reqBody); err != nil {
 		logger.Error().Err(err).Msg("failed to bind request body")
-		return response.TechnicalError400.ReturnResponse(c, nil)
+		return response.TechnicalError.ReturnResponse(c, nil)
 	}
 
 	if err := c.Validate(reqBody); err != nil {
 		logger.Error().Err(err).Msg("Invalid request body")
-		return response.DataValidationErr400.ReturnResponse(c, nil)
+		return response.DataValidationErr.ReturnResponse(c, nil)
 	}
 
 	id := utils.GenerateULID()

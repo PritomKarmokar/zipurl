@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"strings"
 	"time"
 
 	"github.com/PritomKarmokar/zipurl/cmd/config"
@@ -19,35 +20,48 @@ func UserSignUpHandler(c *echo.Context) error {
 	reqBody := dts.UserSignUp{}
 	if err := c.Bind(&reqBody); err != nil {
 		logger.Error().Err(err).Msg("failed to bind request body for signup request")
-		return response.TechnicalError400.ReturnResponse(c, nil)
+		return response.TechnicalError.ReturnResponse(c, nil)
 	}
+
+	reqBody.UserName = strings.TrimSpace(reqBody.UserName)
+	reqBody.FirstName = strings.TrimSpace(reqBody.FirstName)
+	reqBody.LastName = strings.TrimSpace(reqBody.LastName)
+	reqBody.Email = utils.NormalizeEmail(reqBody.Email)
 
 	if err := c.Validate(reqBody); err != nil {
 		logger.Error().Err(err).Msg("Invalid request body provided for signup request")
-		return response.DataValidationErr400.ReturnResponse(c, nil)
+		return response.DataValidationErr.ReturnResponse(c, nil)
 	}
 
-	user, err := repository.GetUserWithEmailAddress(db, reqBody.Email)
-	if user != nil || err != nil {
-		logger.Error().Err(err).Msg("User with this email address not found")
+	email := reqBody.Email
+	userExists, err := repository.UserExistsByEmail(db, email)
+	if err != nil {
+		logger.Error().Err(err).Msgf("Error Occurred While Fetching User with email %v", email)
+		return response.TechnicalError.ReturnResponse(c, nil)
+	}
+	if userExists {
+		logger.Debug().Msgf("User with email %v already exists", email)
 		return response.UserAlreadyExistsWithEmail.ReturnResponse(c, nil)
 	}
+
+	now := time.Now()
 
 	newUser := &model.User{
 		ID:         utils.GenerateULID(),
 		UserName:   reqBody.UserName,
 		FirstName:  reqBody.FirstName,
 		LastName:   reqBody.LastName,
-		Email:      reqBody.Email,
-		Role:       string(model.UserRole),
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
-		DateJoined: time.Now(),
+		Email:      email,
+		Role:       model.UserRole,
+		Status:     model.StatusActive,
+		CreatedAt:  now,
+		UpdatedAt:  now,
+		DateJoined: now,
 	}
 
 	if err := newUser.SetPassword(reqBody.Password); err != nil {
 		logger.Error().Err(err).Msg("Error occurred while setting user password")
-		return response.TechnicalError400.ReturnResponse(c, nil)
+		return response.TechnicalError.ReturnResponse(c, nil)
 	}
 
 	if err := repository.CreateNewUserObject(db, newUser); err != nil {
@@ -60,7 +74,7 @@ func UserSignUpHandler(c *echo.Context) error {
 		"first_name":  newUser.FirstName,
 		"last_name":   newUser.LastName,
 		"email":       newUser.Email,
-		"date_joined": utils.FormatTime(newUser.DateJoined),
+		"date_joined": utils.FormatTime(now),
 	}
 	return response.UserSignUpSuccess.ReturnResponse(c, responseData)
 }

@@ -21,20 +21,20 @@ const (
 )
 
 type User struct {
-	ID        string `gorm:"primaryKey;size:26" json:"id"`
-	UserName  string `gorm:"column:username;type:varchar(50);not null" json:"username"`
-	FirstName string `gorm:"column:first_name;type:varchar(25);not null" json:"first_name"`
-	LastName  string `gorm:"column:last_name;type:varchar(25);not null" json:"last_name"`
-	Email     string `gorm:"column:email;type:varchar(100);not null" json:"email"`
-	Password  string `gorm:"column:password;type:text" json:"-"`
-	Status    string `gorm:"column:status;type:varchar(10);not null;default:active" json:"status"`
-	Role      string `gorm:"column:role;type:varchar(10);not null" json:"role"`
+	ID        string     `gorm:"primaryKey;size:26" json:"id"`
+	UserName  string     `gorm:"column:username;type:varchar(50);not null" json:"username"`
+	FirstName string     `gorm:"column:first_name;type:varchar(25);not null" json:"first_name"`
+	LastName  string     `gorm:"column:last_name;type:varchar(25);not null" json:"last_name"`
+	Email     string     `gorm:"column:email;type:varchar(100);not null" json:"email"`
+	Password  string     `gorm:"column:password;type:text" json:"-"`
+	Status    UserStatus `gorm:"column:status;type:varchar(10);not null;default:active" json:"status"`
+	Role      Role       `gorm:"column:role;type:varchar(10);not null" json:"role"`
 
 	CreatedAt  time.Time  `gorm:"column:created_at;autoCreateTime" json:"created_at"`
 	UpdatedAt  time.Time  `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
 	DeletedAt  *time.Time `gorm:"column:deleted_at" json:"deleted_at,omitempty"`
 	LastLogin  *time.Time `gorm:"column:last_login" json:"last_login,omitempty"`
-	DateJoined time.Time  `gorm:"column:date_joined" json:"date_joined,autoUpdateTime" json:"date_joined"`
+	DateJoined time.Time  `gorm:"column:date_joined,autoUpdateTime" json:"date_joined"`
 }
 
 func (u *User) TableName() string {
