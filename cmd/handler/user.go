@@ -11,6 +11,7 @@ import (
 	"github.com/PritomKarmokar/zipurl/cmd/response"
 	"github.com/PritomKarmokar/zipurl/cmd/utils"
 	"github.com/labstack/echo/v5"
+	"github.com/spf13/viper"
 )
 
 func UserSignUpHandler(c *echo.Context) error {
@@ -77,4 +78,77 @@ func UserSignUpHandler(c *echo.Context) error {
 		"date_joined": utils.FormatTime(now),
 	}
 	return response.UserSignUpSuccess.ReturnResponse(c, responseData)
+}
+
+func UserLoginHandler(c *echo.Context) error {
+	db := config.GetDatabase()
+	clients := config.GetClients()
+	logger := config.GetRequestLogger(c)
+
+	reqBody := dts.UserLoginRequest{}
+	if err := c.Bind(&reqBody); err != nil {
+		logger.Error().Err(err).Msg("failed to bind request body for login")
+		return response.TechnicalError.ReturnResponse(c, nil)
+	}
+
+	reqBody.Email = strings.TrimSpace(reqBody.Email)
+	reqBody.Password = strings.TrimSpace(reqBody.Password)
+
+	if err := c.Validate(reqBody); err != nil {
+		logger.Error().Err(err).Msg("Invalid request body provided for login")
+		return response.DataValidationErr.ReturnResponse(c, nil)
+	}
+
+	start := time.Now()
+	user, err := repository.GetUserByEmail(db, reqBody.Email)
+	logger.Info().Dur("db_query_ms", time.Since(start)).Msg("DB query time")
+
+	if err != nil {
+		logger.Error().Err(err).Msg("failed to get customer auth")
+		return response.TechnicalError.ReturnResponse(c, nil)
+	}
+
+	if user == nil {
+		logger.Info().Str("email", reqBody.Email).Msg("User does not exist")
+		return response.UserNotFound.ReturnResponse(c, nil)
+	}
+
+	//Verify Password
+	start = time.Now()
+	passwordMatched := user.CheckPassword(reqBody.Password)
+	logger.Info().Dur("bcrypt_ms", time.Since(start)).Msg("Bcrypt time")
+
+	if !passwordMatched {
+		logger.Info().Str("email", reqBody.Email).Msg("Password does not match")
+		return response.InvalidCredentials.ReturnResponse(c, nil)
+	}
+
+	// Create token payload
+	payload := map[string]interface{}{
+		"id":   user.ID,
+		"name": user.UserName,
+	}
+
+	// Generate access and refresh tokens
+	start = time.Now()
+	tokens, err := clients.TokenClient.CreateAccessAndRefreshTokens(payload)
+	logger.Info().Dur("jwt_ms", time.Since(start)).Msg("JWT time")
+
+	if err != nil {
+		logger.Error().Err(err).Msg("Failed to create tokens")
+		return response.TechnicalError.ReturnResponse(c, nil)
+	}
+
+	err = user.UpdateLastLoginTime(db)
+	if err != nil {
+		logger.Error().Err(err).Msg("Failed to update last login time")
+	}
+
+	responseData := dts.UserLoginResponse{
+		AccessToken:  tokens.Access,
+		RefreshToken: tokens.Refresh,
+		TokenType:    viper.GetString("JWT_AUTH_HEADER_TYPE"),
+		LastLoginAt:  user.LastLogin,
+	}
+	return response.UserLoginSuccess.ReturnResponse(c, responseData)
 }

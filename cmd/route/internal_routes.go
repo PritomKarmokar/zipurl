@@ -9,4 +9,6 @@ func RegisterInternalRoutes(route *echo.Group) {
 	route.POST("/url/shorten", handler.UrlShortenerHandler)
 
 	route.POST("/user/signup", handler.UserSignUpHandler)
+
+	route.POST("/user/login", handler.UserLoginHandler)
 }

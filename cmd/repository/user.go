@@ -62,3 +62,41 @@ func UserExistsByEmail(db *gorm.DB, email string) (bool, error) {
 
 	return true, nil
 }
+
+func GetUserByEmail(db *gorm.DB, email string) (*model.User, error) {
+	start := time.Now()
+	var user model.User
+
+	log.Debug().
+		Str("operation", "GetUserByEmail").
+		Str("email", email).
+		Msg("Getting user by email")
+
+	result := db.Where("email = ?", email).First(&user)
+	duration := time.Since(start)
+
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			log.Debug().
+				Str("operation", "GetUserByEmail").
+				Str("email", email).
+				Dur("duration_ms", duration).
+				Msg("User not found with this email")
+			return nil, nil
+		}
+		log.Error().
+			Err(result.Error).
+			Str("operation", "GetUserByEmail").
+			Dur("duration_ms", duration).
+			Msg("Failed to get user by email")
+		return nil, result.Error
+	}
+
+	log.Debug().
+		Str("operation", "GetUserByEmail").
+		Str("email", email).
+		Dur("duration_ms", duration).
+		Msg("User found with this email")
+
+	return &user, nil
+}

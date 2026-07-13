@@ -63,4 +63,24 @@ var (
 		},
 		nil,
 	)
+
+	UserNotFound = NewCodeObject(
+		http.StatusBadRequest,
+		"ZIP_UNF",
+		map[string]string{
+			"en": "No User with this email address found.",
+			"bn": "No User with this email address found.",
+		},
+		nil,
+	)
+
+	InvalidCredentials = NewCodeObject(
+		http.StatusBadRequest,
+		"ZIP_INVC",
+		map[string]string{
+			"en": "Invalid Credentials Provided",
+			"bn": "Invalid Credentials Provided",
+		},
+		nil,
+	)
 )

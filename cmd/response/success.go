@@ -21,3 +21,12 @@ var UserSignUpSuccess = NewCodeObject(
 	},
 	nil,
 )
+
+var UserLoginSuccess = NewCodeObject(
+	http.StatusOK,
+	"ZIP_ULS",
+	map[string]string{
+		"en": "User Login Successful",
+		"bn": "User Login Successful",
+	},
+	nil)
