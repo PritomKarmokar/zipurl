@@ -83,4 +83,14 @@ var (
 		},
 		nil,
 	)
+
+	UnAuthorized = NewCodeObject(
+		http.StatusUnauthorized,
+		"ZIP_AUTH_UA",
+		map[string]string{
+			"en": "Unauthorized Access",
+			"bn": "অননুমোদিত প্রবেশ",
+		},
+		nil,
+	)
 )

@@ -24,6 +24,7 @@ func RegisterRoutes(e *echo.Echo) {
 
 	internalRoute := basePrefix.Group("/api/v1")
 	RegisterInternalRoutes(internalRoute)
+	RegisterProtectedInternalRoutes(internalRoute)
 
 	// Redirect Routes (no base prefix provided)
 	redirectRoute := e.Group("/")
