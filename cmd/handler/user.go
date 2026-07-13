@@ -91,8 +91,7 @@ func UserLoginHandler(c *echo.Context) error {
 		return response.TechnicalError.ReturnResponse(c, nil)
 	}
 
-	reqBody.Email = strings.TrimSpace(reqBody.Email)
-	reqBody.Password = strings.TrimSpace(reqBody.Password)
+	reqBody.Email = utils.NormalizeEmail(reqBody.Email)
 
 	if err := c.Validate(reqBody); err != nil {
 		logger.Error().Err(err).Msg("Invalid request body provided for login")
@@ -104,13 +103,18 @@ func UserLoginHandler(c *echo.Context) error {
 	logger.Info().Dur("db_query_ms", time.Since(start)).Msg("DB query time")
 
 	if err != nil {
-		logger.Error().Err(err).Msg("failed to get customer auth")
+		logger.Error().Err(err).Msg("failed to get user via email")
 		return response.TechnicalError.ReturnResponse(c, nil)
 	}
 
 	if user == nil {
 		logger.Info().Str("email", reqBody.Email).Msg("User does not exist")
-		return response.UserNotFound.ReturnResponse(c, nil)
+		return response.InvalidCredentials.ReturnResponse(c, nil)
+	}
+
+	if user.Status != model.StatusActive {
+		logger.Info().Str("email", reqBody.Email).Msg("User is not active")
+		return response.InvalidCredentials.ReturnResponse(c, nil)
 	}
 
 	//Verify Password

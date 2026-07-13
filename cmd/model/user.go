@@ -60,7 +60,11 @@ func (u *User) UpdateLastLoginTime(db *gorm.DB) error {
 		Where("id = ? AND status = ?", u.ID, StatusActive).
 		Update("last_login", now)
 
-	return result.Error
+	if result.Error != nil {
+		return result.Error
+	}
+	u.LastLogin = &now
+	return nil
 }
 
 func (u *User) BeforeCreate(db *gorm.DB) error {
