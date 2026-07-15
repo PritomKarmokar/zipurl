@@ -100,3 +100,39 @@ func GetUserByEmail(db *gorm.DB, email string) (*model.User, error) {
 
 	return &user, nil
 }
+
+func GetUserByID(db *gorm.DB, id string) (*model.User, error) {
+	start := time.Now()
+	var user model.User
+
+	log.Debug().
+		Str("operation", "GetUserByID").
+		Msg("Getting user by id")
+
+	result := db.Where("id = ? AND status = ?", id, model.StatusActive).First(&user)
+	duration := time.Since(start)
+
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			log.Debug().
+				Str("operation", "GetUserByID").
+				Str("userID", id).
+				Dur("duration_ms", duration).
+				Msg("No user or active user found with this id")
+			return nil, nil
+		}
+		log.Error().
+			Err(result.Error).
+			Str("operation", "GetUserByID").
+			Dur("duration_ms", duration).
+			Msg("Failed to get user by id")
+		return nil, result.Error
+	}
+	log.Debug().
+		Str("operation", "GetUserByID").
+		Str("userID", id).
+		Dur("duration_ms", duration).
+		Msg("User found with this userID")
+
+	return &user, nil
+}

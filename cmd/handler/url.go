@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/PritomKarmokar/zipurl/cmd/config"
@@ -17,6 +18,7 @@ import (
 func UrlShortenerHandler(c *echo.Context) error {
 	logger := config.GetRequestLogger(c)
 	db := config.GetDatabase()
+	clients := config.GetClients()
 
 	reqBody := dts.ShortUrlRequest{}
 	if err := c.Bind(&reqBody); err != nil {
@@ -29,6 +31,46 @@ func UrlShortenerHandler(c *echo.Context) error {
 		return response.DataValidationErr.ReturnResponse(c, nil)
 	}
 
+	// Validating Authorization Header
+	unAuthorized := false
+	authHeader := c.Request().Header.Get("Authorization")
+	if authHeader == "" {
+		unAuthorized = true
+	}
+	_ = unAuthorized
+
+	// Extract token (format: "Bearer <token>")
+	var token string
+	authTokenSegments := strings.Split(authHeader, " ")
+	if len(authTokenSegments) != 2 {
+		unAuthorized = true
+	}
+	tokenType := authTokenSegments[0]
+	if tokenType != viper.GetString("JWT_AUTH_HEADER_TYPE") {
+		token = authTokenSegments[1]
+	} else {
+		unAuthorized = true
+	}
+
+	// Validate token
+	claims, err := clients.TokenClient.VerifyToken(token, "access")
+	if err != nil {
+		unAuthorized = true
+	}
+	data, ok := claims["data"].(map[string]interface{})
+	if !ok {
+		unAuthorized = true
+	}
+	userId := data["id"].(string)
+
+	user, err := repository.GetUserByID(db, userId)
+	if user == nil || err != nil {
+		unAuthorized = true
+	}
+
+	if user != nil {
+
+	}
 	id := utils.GenerateULID()
 	currentTime := time.Now()
 	uniqueToken := utils.EncodeString(id[20:]) // Generating Base62 encoded token from last 7 digits of ulid id
