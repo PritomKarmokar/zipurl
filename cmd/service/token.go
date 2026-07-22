@@ -9,8 +9,9 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"github.com/golang-jwt/jwt/v5"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type TokenClient struct {
@@ -209,7 +210,7 @@ func (tc *TokenClient) VerifyToken(tokenString string, tokenType string) (map[st
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return tc.jwtSigningKey, nil
+		return tc.jwtVerifyingKey, nil
 	})
 
 	if err != nil {
