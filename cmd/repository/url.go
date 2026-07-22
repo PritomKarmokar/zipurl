@@ -2,10 +2,11 @@ package repository
 
 import (
 	"errors"
+	"time"
+
 	"github.com/PritomKarmokar/zipurl/cmd/model"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
-	"time"
 )
 
 func CreateUrlDBObject(db *gorm.DB, data *model.URL) error {
@@ -64,5 +65,40 @@ func FetchUrlDBObject(db *gorm.DB, token string) (*model.URL, error) {
 		Dur("duration_ms", duration).
 		Msg("url db object fetched successfully")
 
+	return &url, nil
+}
+
+func FindExistingURL(db *gorm.DB, originalUrl string) (*model.URL, error) {
+	start := time.Now()
+	var url model.URL
+
+	log.Debug().
+		Str("url", originalUrl).
+		Msg("Fetching URL db object")
+
+	result := db.Where("url = ?", originalUrl).First(&url)
+
+	duration := time.Since(start)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			log.Debug().
+				Str("operation", "FindExistingURL").
+				Dur("duration_ms", duration).
+				Msg("url db object not found")
+			return nil, nil
+		}
+		log.Error().
+			Err(result.Error).
+			Str("operation", "FindExistingURL").
+			Dur("duration_ms", duration).
+			Msg("Failed to fetch url db object")
+		return nil, result.Error
+	}
+
+	log.Info().
+		Str("operation", "FindExistingURL").
+		Str("url", originalUrl).
+		Dur("duration_ms", duration).
+		Msg("url db object fetched successful")
 	return &url, nil
 }

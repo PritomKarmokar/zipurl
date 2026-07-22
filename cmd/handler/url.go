@@ -71,6 +71,19 @@ func UrlShortenerHandler(c *echo.Context) error {
 		user = fetchedUser
 	}
 
+	urlObject, err := repository.FindExistingURL(db, reqBody.Url)
+	if err != nil {
+		logger.Error().Err(err).Msg("failed to fetch url")
+		return response.TechnicalError.ReturnResponse(c, nil)
+	}
+	if urlObject != nil {
+		logger.Info().Msgf("short url already exists for this url: %s", reqBody.Url)
+		shortUrl := viper.GetString("ZIP_URL_BASE_URL") + "/" + urlObject.HashedToken
+		responseData := map[string]interface{}{
+			"short_url": shortUrl,
+		}
+		return response.GenericSuccess200.ReturnResponse(c, responseData)
+	}
 	// Build the short URL
 	tokenId := utils.GenerateULID()
 	currentTime := time.Now()
