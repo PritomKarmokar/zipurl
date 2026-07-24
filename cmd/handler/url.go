@@ -30,10 +30,8 @@ func UrlShortenerHandler(c *echo.Context) error {
 		return response.DataValidationErr.ReturnResponse(c, nil)
 	}
 
-	const anonymousClickCount int64 = 1000000
-
-	authHeader := c.Request().Header.Get("Authorization")
 	var user *model.User
+	authHeader := c.Request().Header.Get("Authorization")
 
 	if authHeader != "" {
 		// A header was sent, so it must be valid — no silent fallback to anonymous.
@@ -71,20 +69,26 @@ func UrlShortenerHandler(c *echo.Context) error {
 		user = fetchedUser
 	}
 
-	urlObject, err := repository.FindExistingURL(db, reqBody.Url)
+	if user == nil && (reqBody.Expiry != "" || reqBody.MaximumClicks != nil) {
+		logger.Warn().Msg("Anonymous User Attempted to set restricted fields")
+		return response.PermissionForbidden.ReturnResponse(c, nil)
+	}
+
+	existingUrl, err := repository.FindExistingURL(db, reqBody.Url)
 	if err != nil {
 		logger.Error().Err(err).Msg("failed to fetch url")
 		return response.TechnicalError.ReturnResponse(c, nil)
 	}
-	if urlObject != nil {
+	if existingUrl != nil {
 		logger.Info().Msgf("short url already exists for this url: %s", reqBody.Url)
-		shortUrl := viper.GetString("ZIP_URL_BASE_URL") + "/" + urlObject.HashedToken
+		shortUrl := viper.GetString("ZIP_URL_BASE_URL") + "/" + existingUrl.HashedToken
 		responseData := map[string]interface{}{
 			"short_url": shortUrl,
 		}
 		return response.GenericSuccess200.ReturnResponse(c, responseData)
 	}
-	// Build the short URL
+
+	// Build the new short URL
 	tokenId := utils.GenerateULID()
 	currentTime := time.Now()
 	uniqueToken := utils.EncodeString(tokenId[20:]) // Base62 encoded token from last 6 chars of ULID
@@ -95,12 +99,14 @@ func UrlShortenerHandler(c *echo.Context) error {
 		HashedToken: uniqueToken,
 		CreatedAt:   currentTime,
 		UpdatedAt:   currentTime,
+		ClickCount:  0,
 	}
 
 	if user != nil {
 		newUrl.UserID = &user.ID
-	} else {
-		newUrl.ClickCount = anonymousClickCount
+		if reqBody.MaximumClicks != nil {
+			newUrl.MaxClicks = reqBody.MaximumClicks
+		}
 	}
 
 	if err := repository.CreateUrlDBObject(db, newUrl); err != nil {

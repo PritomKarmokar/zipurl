@@ -93,4 +93,14 @@ var (
 		},
 		nil,
 	)
+
+	PermissionForbidden = NewCodeObject(
+		http.StatusForbidden,
+		"ZIP_AUTH_PF",
+		map[string]string{
+			"en": "Forbidden: The `expiry` and `maximum_clicks` fields require authentication. Please log in to use these features.",
+			"bn": "নিষিদ্ধ: `expiry` এবং `maximum_clicks` ফিল্ডগুলো ব্যবহার করতে লগইন করা আবশ্যক। এই ফিচারগুলো ব্যবহার করতে অনুগ্রহ করে লগইন করুন।",
+		},
+		nil,
+	)
 )
