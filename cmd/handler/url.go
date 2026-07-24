@@ -74,48 +74,90 @@ func UrlShortenerHandler(c *echo.Context) error {
 		return response.PermissionForbidden.ReturnResponse(c, nil)
 	}
 
-	existingUrl, err := repository.FindExistingURL(db, reqBody.Url)
-	if err != nil {
-		logger.Error().Err(err).Msg("failed to fetch url")
-		return response.TechnicalError.ReturnResponse(c, nil)
-	}
-	if existingUrl != nil {
-		logger.Info().Msgf("short url already exists for this url: %s", reqBody.Url)
-		shortUrl := viper.GetString("ZIP_URL_BASE_URL") + "/" + existingUrl.HashedToken
+	var shortUrl string
+	currentTime := time.Now()
+
+	// Request Handling for Anonymous User
+	if user == nil {
+		exisingUrl, err := repository.FindExistingURLForAnonymousUser(db, reqBody.Url)
+		if err != nil {
+			logger.Error().Err(err).Msg("failed to find existing url")
+			return response.TechnicalError.ReturnResponse(c, nil)
+		}
+		if exisingUrl != nil {
+			logger.Info().Msgf("short url already exists for this url: %s", reqBody.Url)
+			shortUrl = viper.GetString("ZIP_URL_BASE_URL") + "/" + exisingUrl.HashedToken
+		} else {
+			// Anonymous links are always unrestricted/shared by design — do not set ExpiresAt or MaxClicks here.
+			urlObject := &model.URL{
+				ID:          utils.GenerateULID(),
+				URL:         reqBody.Url,
+				HashedToken: utils.GenerateShortToken(),
+				CreatedAt:   currentTime,
+				UpdatedAt:   currentTime,
+				ClickCount:  0,
+			}
+			if err := repository.CreateUrlDBObject(db, urlObject); err != nil {
+				logger.Warn().Err(err).Msg("Failed to create url db object")
+				return response.ShortURLCreationFailed.ReturnResponse(c, nil)
+			}
+			shortUrl = viper.GetString("ZIP_URL_BASE_URL") + "/" + urlObject.HashedToken
+		}
 		responseData := map[string]interface{}{
 			"short_url": shortUrl,
 		}
 		return response.GenericSuccess200.ReturnResponse(c, responseData)
 	}
 
-	// Build the new short URL
-	tokenId := utils.GenerateULID()
-	currentTime := time.Now()
-	uniqueToken := utils.EncodeString(tokenId[20:]) // Base62 encoded token from last 6 chars of ULID
+	var expiryTime time.Time
+	if reqBody.Expiry != "" {
+		duration, err := utils.ParseExpiryDuration(reqBody.Expiry)
+		if err != nil {
+			logger.Warn().
+				Str("expiry", reqBody.Expiry).
+				Err(err).
+				Msg("invalid expiry duration")
 
-	newUrl := &model.URL{
-		ID:          tokenId,
-		URL:         reqBody.Url,
-		HashedToken: uniqueToken,
-		CreatedAt:   currentTime,
-		UpdatedAt:   currentTime,
-		ClickCount:  0,
+			return response.ExpiryTimeDataValidationError.ReturnResponse(c, nil)
+		}
+		expiryTime = currentTime.Add(duration)
 	}
 
-	if user != nil {
-		newUrl.UserID = &user.ID
+	existingUrl, err := repository.FindExistingUrlForLoggedInUser(db, reqBody.Url, user.ID, currentTime)
+	if err != nil {
+		logger.Error().Err(err).Msg("failed to fetch url")
+		return response.TechnicalError.ReturnResponse(c, nil)
+	}
+
+	if existingUrl != nil {
+		logger.Info().Msgf("short url already exists for this url: %s", reqBody.Url)
+		shortUrl = viper.GetString("ZIP_URL_BASE_URL") + "/" + existingUrl.HashedToken
+	} else {
+		// Build the new short URL for Logged Users perspective
+		newUrl := &model.URL{
+			ID:          utils.GenerateULID(),
+			URL:         reqBody.Url,
+			HashedToken: utils.GenerateShortToken(),
+			UserID:      &user.ID,
+			CreatedAt:   currentTime,
+			UpdatedAt:   currentTime,
+			ClickCount:  0,
+		}
+		if reqBody.Expiry != "" {
+			newUrl.ExpiresAt = &expiryTime
+		}
 		if reqBody.MaximumClicks != nil {
 			newUrl.MaxClicks = reqBody.MaximumClicks
 		}
+
+		if err := repository.CreateUrlDBObject(db, newUrl); err != nil {
+			logger.Warn().Err(err).Msg("Failed to create url db object")
+			return response.ShortURLCreationFailed.ReturnResponse(c, nil)
+		}
+		logger.Info().Msg("URL Shortener DB object created successfully")
+		shortUrl = viper.GetString("ZIP_URL_BASE_URL") + "/" + newUrl.HashedToken
 	}
 
-	if err := repository.CreateUrlDBObject(db, newUrl); err != nil {
-		logger.Warn().Err(err).Msg("Failed to create url db object")
-		return response.ShortURLCreationFailed.ReturnResponse(c, nil)
-	}
-
-	logger.Info().Msg("URL Shortener DB object created successfully")
-	shortUrl := viper.GetString("ZIP_URL_BASE_URL") + "/" + newUrl.HashedToken
 	responseData := map[string]interface{}{
 		"short_url": shortUrl,
 	}

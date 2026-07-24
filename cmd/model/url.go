@@ -7,7 +7,7 @@ const DefaultClickCount int64 = 10e6
 type URL struct {
 	ID          string  `gorm:"primaryKey;size:26"`
 	UserID      *string `gorm:"size:26;index"`
-	User        *User   `gorm:"foreignKey:User;constraint:OnDelete:CASCADE"`
+	User        *User   `gorm:"foreignKey:UserID;references:ID;constraint:OnDelete:CASCADE"`
 	URL         string  `gorm:"type:text;not null"`
 	HashedToken string  `gorm:"type:text;not null"`
 

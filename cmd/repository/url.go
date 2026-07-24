@@ -68,37 +68,82 @@ func FetchUrlDBObject(db *gorm.DB, token string) (*model.URL, error) {
 	return &url, nil
 }
 
-func FindExistingURL(db *gorm.DB, originalUrl string) (*model.URL, error) {
+func FindExistingURLForAnonymousUser(db *gorm.DB, originalUrl string) (*model.URL, error) {
 	start := time.Now()
 	var url model.URL
 
 	log.Debug().
 		Str("url", originalUrl).
-		Msg("Fetching URL db object")
+		Msg("Fetching URL db object for annoying user")
 
-	result := db.Where("url = ?", originalUrl).First(&url)
+	result := db.
+		Where("url = ?", originalUrl).
+		Where("user_id IS NULL OR user_id = ''").
+		First(&url)
 
 	duration := time.Since(start)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			log.Debug().
-				Str("operation", "FindExistingURL").
+				Str("operation", "FindExistingURLForAnonymousUser").
 				Dur("duration_ms", duration).
-				Msg("url db object not found")
+				Msg("url object not found")
 			return nil, nil
 		}
 		log.Error().
 			Err(result.Error).
-			Str("operation", "FindExistingURL").
+			Str("operation", "FindExistingURLForAnonymousUser").
 			Dur("duration_ms", duration).
 			Msg("Failed to fetch url db object")
 		return nil, result.Error
 	}
 
 	log.Info().
-		Str("operation", "FindExistingURL").
+		Str("operation", "FindExistingURLForAnonymousUser").
 		Str("url", originalUrl).
 		Dur("duration_ms", duration).
 		Msg("url db object fetched successful")
+	return &url, nil
+}
+
+func FindExistingUrlForLoggedInUser(db *gorm.DB, originalUrl string, userId string, currentTime time.Time) (*model.URL, error) {
+	start := time.Now()
+	var url model.URL
+
+	log.Debug().
+		Str("url", originalUrl).
+		Msg("Fetching URL db object for logged in User")
+
+	result := db.
+		Where("url = ?", originalUrl).
+		Where("user_id = ?", userId).
+		Where("expires_at > ?", currentTime).
+		Where("click_count < max_clicks").
+		First(&url)
+
+	duration := time.Since(start)
+
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			log.Debug().
+				Str("operation", "FindExistingUrlForLoggedInUser").
+				Dur("duration_ms", duration).
+				Msg("no reusable url object found")
+			return nil, nil
+		}
+		log.Error().
+			Err(result.Error).
+			Str("operation", "FindExistingUrlForLoggedInUser").
+			Dur("duration_ms", duration).
+			Msg("Failed to fetch url db object")
+		return nil, result.Error
+	}
+
+	log.Info().
+		Str("operation", "FindExistingUrlForLoggedInUser").
+		Str("url", originalUrl).
+		Dur("duration_ms", duration).
+		Msg("reusable url db object fetched successfully")
+
 	return &url, nil
 }

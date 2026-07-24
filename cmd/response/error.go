@@ -34,6 +34,16 @@ var (
 		nil,
 	)
 
+	ExpiryTimeDataValidationError = NewCodeObject(
+		http.StatusBadRequest,
+		"ZIP_INVALID_EXPIRY_400",
+		map[string]string{
+			"en": "Invalid expiry value. Supported values are: 30m, 60m, 90m, 7d, and 30d. Example: \"expiry\": \"30m\".",
+			"bn": "মেয়াদের সময় সঠিক নয়। গ্রহণযোগ্য মান: 30m, 60m, 90m, 7d এবং 30d। উদাহরণ: \"expiry\": \"30m\"।",
+		},
+		nil,
+	)
+
 	UserSignUpFailed = NewCodeObject(
 		http.StatusInternalServerError,
 		"ZIP_USF",
