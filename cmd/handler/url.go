@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -37,7 +38,7 @@ func UrlShortenerHandler(c *echo.Context) error {
 		// A header was sent, so it must be valid — no silent fallback to anonymous.
 		authTokenSegments := strings.Split(authHeader, " ")
 		if len(authTokenSegments) != 2 || authTokenSegments[0] != viper.GetString("JWT_AUTH_HEADER_TYPE") {
-			logger.Warn().Msg("malformed authorization header")
+			logger.Warn().Msg("Invalid authorization header")
 			return response.UnAuthorized.ReturnResponse(c, nil)
 		}
 		token := authTokenSegments[1]
@@ -169,13 +170,28 @@ func UrlRedirectHandler(c *echo.Context) error {
 	db := config.GetDatabase()
 
 	token := c.Param("token")
-	urlObject, err := repository.FetchUrlDBObject(db, token)
-
-	if err != nil || urlObject == nil {
-		logger.Error().Err(err).Msg("Failed to fetch url")
-		return response.InvalidUrlsProvided.ReturnResponse(c, nil)
+	if token == "" {
+		return response.UrlNotFoundOrExpired.ReturnResponse(c, nil)
 	}
 
-	originalUrl := urlObject.URL
-	return c.Redirect(http.StatusTemporaryRedirect, originalUrl)
+	urlObject, err := repository.FetchUrlByToken(db, token)
+	if err != nil {
+		logger.Error().Err(err).Str("token", token).Msg("Failed to fetch url")
+		return response.TechnicalError.ReturnResponse(c, nil)
+	}
+	if urlObject == nil {
+		logger.Warn().Str("token", token).Msg("Url not found or expired")
+		return response.UrlNotFoundOrExpired.ReturnResponse(c, nil)
+	}
+
+	parsedUrl, err := url.Parse(urlObject.URL)
+	if err != nil || (parsedUrl.Scheme != "http" && parsedUrl.Scheme != "https") {
+		logger.Error().Str("token", token).Str("url", urlObject.URL).Msg("Invalid redirect target")
+		return response.TechnicalError.ReturnResponse(c, nil)
+	}
+
+	if err := repository.IncrementClickCount(db, urlObject.HashedToken); err != nil {
+		logger.Error().Err(err).Msg("Failed to increment click count")
+	}
+	return c.Redirect(http.StatusFound, parsedUrl.String())
 }

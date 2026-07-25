@@ -2,8 +2,6 @@ package model
 
 import "time"
 
-const DefaultClickCount int64 = 10e6
-
 type URL struct {
 	ID          string  `gorm:"primaryKey;size:26"`
 	UserID      *string `gorm:"size:26;index"`
@@ -12,7 +10,7 @@ type URL struct {
 	HashedToken string  `gorm:"type:text;not null"`
 
 	ExpiresAt  *time.Time `gorm:"type:timestamptz"`
-	ClickCount int64      `gorm:"not null;default:0"`
+	ClickCount int64      `gorm:"column:click_count;not null;default:0"`
 	MaxClicks  *int64     `gorm:"type:bigint"`
 	CreatedAt  time.Time  `gorm:"type:timestamptz;not null;default:now()"`
 	UpdatedAt  time.Time  `gorm:"type:timestamptz;not null;default:now()"`

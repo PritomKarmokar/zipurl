@@ -2,14 +2,13 @@ package response
 
 import "net/http"
 
-// InvalidCredentials indicates the username or password is incorrect.
 var (
-	InvalidUrlsProvided = NewCodeObject(
-		http.StatusBadRequest,
-		"ZIP_IUP",
+	UrlNotFoundOrExpired = NewCodeObject(
+		http.StatusNotFound,
+		"ZIP_NFE",
 		map[string]string{
-			"en": "Invalid short url provided",
-			"bn": "ভুল শর্ট ইউআরএল প্রদান করা হয়েছে",
+			"en": "The short URL is either invalid or has expired.",
+			"bn": "শর্ট ইউআরএলটি সঠিক নয় অথবা মেয়াদ উত্তীর্ণ হয়েছে।",
 		},
 		nil,
 	)
